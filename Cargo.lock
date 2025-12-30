@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "systemd-user-timers"
+name = "usertimers"
 version = "0.1.0"
