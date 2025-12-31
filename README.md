@@ -43,4 +43,4 @@ usertimers --help
 You can also get help for a subcommand by typing:
 ```bash
 usertimers <SUBCOMMAND> --help
-~~
+```
