@@ -1,13 +1,13 @@
 [package]
-name = "systemd-user-timers"
-version = "1.0.4"
+name = "ezusertimers"
+version = "0.1.0"
 edition = "2024"
-description = "A simple way to make systemd user timers, and might grow up into a full simple systemd frontend"
-repository = "https://github.com/galacticSystemsInDevelopment/systemd-user-timers"
+authors = ["Michael Descy <mike@mjdescy.me>"]
+description = "A simple command-line tool to manage user timers."
 license = "MIT"
 
 [[bin]]
-name = "usertimers"  # This changes the name of the executable
+name = "ezusertimers"        # This changes the name of the executable
 path = "src/main.rs"         # The path to your Rust source code
 
 [dependencies]
