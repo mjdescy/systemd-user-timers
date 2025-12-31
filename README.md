@@ -53,7 +53,7 @@ Run as release without cargo:
 **Note**: Our GitHub repository does not include the "target" folder, and we don't have cross-compile tools, and you can build it yourself.
 
 ## Contributing packages
-I created a "package" branch. Follow this directory structure to contribute:/<OS>/<ARCH>/<PACKAGE>. When this app is done, I'll release it on the Snap Store, so don't do that for me, please.
+View this page: https://github.com/galacticSystemsInDevelopment/systemd-user-timers/tree/packages
 
 ## Functionality (subcommands)
 
