@@ -11,5 +11,5 @@ name = "ezusertimers"        # This changes the name of the executable
 path = "src/main.rs"         # The path to your Rust source code
 
 [dependencies]
-clap = { version = "4.5.43", features = ["cargo"] }
+clap = { version = "4.5.53", features = ["derive"] }
 shellexpand = "3.1.1"

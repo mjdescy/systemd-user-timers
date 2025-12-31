@@ -1,40 +1,93 @@
-mod command_add;
-mod usertimer;
+use clap::{Args, Parser, Subcommand};
 
-use crate::command_add::add_timer;
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
 
-use clap::{Command, arg, command, value_parser};
+#[derive(Args)]
+struct AddCommand {
+    /// the executable the timer will run
+    #[arg(short, long)]
+    exec: String,
+
+    /// the schedule for the timer ("daily", "weekly", "monthly", "Year-Month-Day Hour:Minute:Second")
+    #[arg(short, long)]
+    when: String,
+
+    /// name of the timer (optional); if omitted, the executable name will be used
+    #[arg(short, long)]
+    name: Option<String>,
+
+    /// description of the timer (optional); if omitted, a description will be generated
+    #[arg(short, long)]
+    description: Option<String>,
+
+    /// execute immediately if missed (default: true)
+    #[arg(short = 'm', long, default_value_t = true)]
+    exec_if_missed: bool,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// add a timer
+    Add(AddCommand),
+    /// enable a disabled timer
+    Enable {
+        /// name of the timer to enable
+        name: String,
+    },
+    /// disable an enabled timer
+    Disable {
+        /// name of the timer to disable
+        name: String,
+    },
+    /// start a timer
+    Start {
+        /// name of the timer to enable
+        name: String,
+    },
+    /// stop a timer
+    Stop {
+        /// name of the timer to stop
+        name: String,
+    },
+    /// remove a timer (deletes both timer and service files)
+    Remove {
+        /// name of the timer to remove
+        name: String,
+    },
+    /// list all user timers
+    List {},
+}
 
 fn main() {
-    let matches = command!()
-        .subcommand(
-            Command::new("add")
-                .about("Add a timer")
-                .args([
-                    arg!(-e --exec <EXECUTABLE> "The executable the timer will run")
-                        .value_parser(value_parser!(String))
-                        .required(true),
-                    arg!(-m --"exec-if-missed" "Execute immediately if missed")
-                        .action(clap::ArgAction::SetTrue),
-                    arg!(-d --desc <DESCRIPTION> "A description of the timer")
-                        .value_parser(value_parser!(String)),
-                    arg!(-s --schedule <SCHEDULE> "The schedule for the timer")
-                        .value_parser(value_parser!(String))
-                        .required(true),
-                    arg!(-n --name <NAME> "Optional: The name for the timer")
-                        .value_parser(value_parser!(String)),
-                    arg!(--"repeating" "Whether the timer is repeating")
-                        .action(clap::ArgAction::SetTrue),
-                    arg!(--"single-use" "Whether the timer is single-use")
-                        .action(clap::ArgAction::SetTrue),
-                    arg!(--"normal-service" "Whether the timer activates a normal service instead of a one-shot")
-                        .action(clap::ArgAction::SetTrue)
-                ])
-        ).get_matches();
+    let cli = Cli::parse();
 
-    if let Some(add_matches) = matches.subcommand_matches("add") {
-        add_timer(add_matches);
-    } else {
-        println!("No subcommand");
+    match &cli.command {
+        Some(Commands::Add(add_cmd)) => {
+            println!("Adding a timer with exec: {}, when: {}", add_cmd.exec, add_cmd.when);
+        },
+        Some(Commands::Enable { name }) => {
+            println!("Enabling timer: {}", name);
+        },
+        Some(Commands::Disable { name }) => {
+            println!("Disabling timer: {}", name);
+        },
+        Some(Commands::Start { name }) => {
+            println!("Starting timer: {}", name);
+        },
+        Some(Commands::Stop { name }) => {
+            println!("Stopping timer: {}", name);
+        },
+        Some(Commands::Remove { name }) => {
+            println!("Removing timer: {}", name);
+        },
+        Some(Commands::List {}) => {
+            println!("Listing all user timers");
+        },
+        None => {}
     }
 }
