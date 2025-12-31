@@ -22,4 +22,11 @@ cargo install systemd-user-timers
 ```
 
 ## Subcommands
-README.md will be updated to include subcommands soon.
+Subcommands will never be included in README.md. To get help, use this command:
+```bash
+usertimers --help
+```
+You can also get help for a subcommand by typing:
+```bash
+usertimers <SUBCOMMAND> --help
+~~
