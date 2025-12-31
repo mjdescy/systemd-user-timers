@@ -7,7 +7,7 @@
 `usertimers` provides an easy way to add, remove, and list *user* timers—which are systemd timers that are set up by a user, are configured in the user's home directory, and run as the user—on a Linux system. User timers can be used to kick off tasks such as backup and wallpaper changing that are executed while the user is logged in.
 
 **Note**: System timers, which are defined in `/etc/systemd/system`, are not supported by this application.
-
+**Note**: This app is under construction.
 The following systemd commands can be used to manage user timers. Adding and removing user timers is a bit more involved, which is the primary reason this tool was written.
 
 ```bash
@@ -17,6 +17,43 @@ systemctl --user stop TIMER   # stop user timer
 systemctl --user status TIMER # display status of a timer
 journalctl --user TIMER       # display log of a timer
 ```
+
+## Installation
+Currently, there is no package for this, so you need to install it manually. You can do so by using the dev container inside Visual Studio Code (needs Dev Containers extension and Docker installed). If you don't want to use the container, you have to have the Rust toolchain installed.
+This command will build an executable:
+```bash
+cargo build
+```
+
+Run:
+```bash
+cargo run
+```
+
+Run the executable without cargo:
+```bash
+./target/debug/usertimers
+
+```
+
+Build as release:
+```bash
+cargo build --release
+```
+
+Run as release:
+```bash
+cargo run --release
+```
+
+Run as release without cargo:
+```bash
+./target/
+```
+**Note**: Our GitHub repository does not include the "target" folder, and we don't have cross-compile tools, and you can build it yourself.
+
+## Contributing packages
+I created a "package" branch. Follow this directory structure to contribute:/<OS>/<ARCH>/<PACKAGE>. When this app is done, I'll release it on the Snap Store, so don't do that for me, please.
 
 ## Functionality (subcommands)
 
