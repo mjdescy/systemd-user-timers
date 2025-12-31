@@ -1,103 +1,114 @@
 use clap::ArgMatches;
-use crate::timers::Timer;
+use std::path::PathBuf;
+use shellexpand::tilde;
+
+use crate::usertimer::UserTimer;
 
 pub fn add_timer(add_matches: &ArgMatches) {
-	// existing/new flags
-	let already_made_service = add_matches.get_flag("already-made-service");
-	let service_name = add_matches.get_one::<String>("service").map(|s| s.to_string());
+    // Extract executable and schedule (required arguments); return error if missing
+    let Some(executable) = add_matches.get_one::<String>("exec") else {
+        eprintln!("Error: Missing required argument 'exec'");
+        return;
+    };
+    let Some(schedule) = add_matches.get_one::<String>("schedule") else {
+        eprintln!("Error: Missing required argument 'schedule'");
+        return;
+    };
 
-	// exec is required unless user specified --already-made-service
-	let exec_opt = if already_made_service {
-		add_matches.get_one::<String>("exec").map(|s| s.to_string())
-	} else {
-		Some(add_matches
-			.get_one::<String>("exec")
-			.map(|s| s.to_string())
-			.unwrap_or_else(|| {
-				eprintln!("--exec is required unless --already-made-service is set");
-				std::process::exit(1)
-			}))
-	};
+    // Check if the executable path points to a valid file
+    let full_path = tilde(&executable).to_string();
+    let exec_path = PathBuf::from(full_path);
+    if !exec_path.is_file() {
+        eprintln!("Error: Executable path does not point to a valid file: {}", executable);
+        return;
+    }
+    
+    // Check if the schedule is valid (via systemd-analyze)
+    let schedule_check = std::process::Command::new("systemd-analyze")
+        .arg("calendar")
+        .arg(schedule)
+        .output()
+        .expect("Failed to execute systemd-analyze");
 
-	let schedule = add_matches
-		.get_one::<String>("schedule")
-		.map(|s| s.to_string())
-		.unwrap_or_else(|| {
-			eprintln!("--schedule is required");
-			std::process::exit(1)
-		});
+    if !schedule_check.status.success() {
+        eprintln!("Error: Invalid schedule format: {}", schedule);
+        return;
+    }
 
-	// optional
-	let description = add_matches
-		.get_one::<String>("desc")
-		.map(|s| s.to_string())
-		.or_else(|| {
-			if already_made_service {
-				service_name.as_ref().map(|s| {
-					let svc = if s.ends_with(".service") {
-						s.trim_end_matches(".service")
-					} else {
-						s.as_str()
-					};
-					format!("Run {}", svc)
-				})
-			} else {
-				exec_opt.as_ref().map(|s| {
-					let exe = std::path::Path::new(s)
-						.file_name()
-						.and_then(|os| os.to_str())
-						.unwrap_or(s.as_str());
-					format!("Run {}", exe)
-				})
-			}
-		});
+    // The description is optional
+    // If not provided, generate a default description from the executable
+    let description_from_executable = format!("Execute {}", executable);
 
-	let name = add_matches
-		.get_one::<String>("name")
-		.map(|s| s.to_string())
-		.unwrap_or_else(|| {
-			if already_made_service {
-				if let Some(svc) = service_name.as_ref() {
-					if svc.ends_with(".service") {
-						return svc.trim_end_matches(".service").to_string();
-					} else {
-						return svc.clone();
-					}
-				}
-			}
-			if let Some(exec) = exec_opt.as_ref() {
-				if let Some(stem) = std::path::Path::new(exec).file_stem().and_then(|os| os.to_str()) {
-					return stem.to_string();
-				}
-			}
-			schedule.replace(|c: char| !c.is_ascii_alphanumeric(), "_")
-		});
+    // Extract description from the optional description argument or use description we generated
+    // from the executable value
+    let description = add_matches
+        .get_one::<String>("desc")
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| description_from_executable.to_string());
 
-	let exec_if_missed = add_matches.get_flag("exec-if-missed");
-	let single_use = add_matches.get_flag("single-use");
-	let normal_service = add_matches.get_flag("normal-service");
-	let enable_at_login = add_matches.get_flag("enable-at-login");
-	let start_after_create = add_matches.get_flag("start-after-create");
-	let recurring = add_matches.get_flag("recurring") || add_matches.get_flag("repeating");
-	let on_calendar = add_matches.get_flag("on-calendar");
-	let from_boot = add_matches.get_flag("from-boot");
+    // The name is optional
+    // If not provided, generate a name from the executable
+    // Use the executable name without path or file extension and replace dots with underscores
+    let name_from_executable = PathBuf::from(executable)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(executable)
+        .replace('.', "_");
 
-	let timer = Timer {
-		name,
-		description,
-		schedule,
-		executable: exec_opt,
-		exec_if_missed,
-		single_use,
-		recurring,
-		on_calendar,
-		from_boot,
-		normal_service,
-		service: service_name,
-		already_made_service,
-		enable_at_login,
-		start_after_create,
-	};
+    // Extract name from the optional name argument or use the name we generated from the executable value
+    let name = add_matches
+        .get_one::<String>("name")
+        .map(|s| s.to_string())
+        .unwrap_or(name_from_executable);
 
-	crate::timers::add_timer(timer);
+    // Create a struct for the timer parameters
+    let user_timer = UserTimer {
+        executable: exec_path.to_string_lossy().to_string(),
+        description: description,
+        schedule: schedule.to_string(),
+        name: name,
+        exec_if_missed: add_matches.get_flag("exec-if-missed")
+    };
+
+    // Create the service file
+    if let Err(e) = user_timer.create_service_file() {
+        eprintln!("Error: Failed to create service file: {}", e);
+        return;
+    }
+
+    // Check if service file exists before creating timer file
+    let service_path = user_timer.service_file_path();
+    if !service_path.exists() {
+        eprintln!("Error: Service file does not exist at {:?}", service_path);
+        return;
+    }
+
+    // Create the timer file
+    if let Err(e) = user_timer.create_timer_file() {
+        eprintln!("Error: Failed to create timer file: {}", e);
+        return;
+    }
+
+    // Check if timer file exists before proceeding
+    let timer_path = user_timer.timer_file_path();
+    if !timer_path.exists() {
+        eprintln!("Error: Timer file does not exist at {:?}", timer_path);
+        return;
+    }
+
+    // Reload systemd daemon
+    std::process::Command::new("systemctl")
+        .arg("--user")
+        .arg("daemon-reload")
+        .status()
+        .expect("Failed to reload systemd daemon");
+
+    // Enable and start the timer
+    std::process::Command::new("systemctl")
+        .arg("--user")
+        .arg("enable")
+        .arg("--now")
+        .arg(format!("{}.timer", user_timer.name))
+        .status()
+        .expect("Failed to enable and start the timer");
 }
