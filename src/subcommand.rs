@@ -52,20 +52,6 @@ pub fn add_timer_command(add_cmd: &AddCommand) {
         return;
     }
 
-    // Check if service file exists before proceeding
-    let service_path = user_timer.service_file_path();
-    if !service_path.exists() {
-        eprintln!("Error: Service file does not exist at {:?}", service_path);
-        return;
-    }
-
-    // Check if timer file exists before proceeding
-    let timer_path = user_timer.timer_file_path();
-    if !timer_path.exists() {
-        eprintln!("Error: Timer file does not exist at {:?}", timer_path);
-        return;
-    }
-
     // Reload systemd daemon
     reload_daemon();
 
