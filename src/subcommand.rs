@@ -4,7 +4,7 @@ use shellexpand;
 use crate::cli::{AddCommand, NameCommand};
 use crate::usertimer::UserTimer;
 
-/// Add a new timer based on the provided arguments
+/// Execute add timer command; add a new user timer
 pub fn add_timer_command(add_cmd: &AddCommand) {
     if !validate_executable_path(&add_cmd.exec) {
         eprintln!("Error: Executable path does not point to a valid file: {}", add_cmd.exec);
@@ -105,7 +105,7 @@ fn get_timer_description(exec: &str, description: &Option<String>) -> String {
     }
 }
 
-/// Show the status of a user timer
+/// Execute status command; show the status of a user timer
 pub fn status_command(name_cmd: &NameCommand) {
     let output = std::process::Command::new("systemctl")
         .arg("--user")
@@ -122,7 +122,7 @@ pub fn status_command(name_cmd: &NameCommand) {
     }
 }
 
-/// List all user timers
+/// Execute list timers command. List all user timers
 pub fn list_timers_command() {
     // List all user timers using systemctl
     let output = std::process::Command::new("systemctl")
@@ -140,9 +140,11 @@ pub fn list_timers_command() {
     }
 }
 
+/// Execute enable timer command
 pub fn enable_timer_command(name_cmd: &NameCommand) {
     enable_timer(&name_cmd.name);
 }
+
 /// Enable a timer by name
 fn enable_timer(name: &str) {
     std::process::Command::new("systemctl")
@@ -154,6 +156,7 @@ fn enable_timer(name: &str) {
         .expect("Failed to enable the timer");
 }
 
+/// Execute disable timer command
 pub fn disable_timer_command(name_cmd: &NameCommand) {
     disable_timer(&name_cmd.name);
 }
@@ -169,6 +172,7 @@ fn disable_timer(name: &str) {
         .expect("Failed to disable the timer");
 }
 
+/// Execute start timer command
 pub fn start_timer_command(name_cmd: &NameCommand) {
     start_timer(&name_cmd.name);
 }
@@ -183,6 +187,7 @@ fn start_timer(name: &str) {
         .expect("Failed to start the timer");
 }
 
+/// Execute stop timer command
 pub fn stop_timer_command(name_cmd: &NameCommand) {
     stop_timer(&name_cmd.name);
 }
@@ -197,6 +202,7 @@ fn stop_timer(name: &str) {
         .expect("Failed to stop the timer");
 }
 
+/// Execute remove timer command
 pub fn remove_timer_command(name_cmd: &NameCommand) {
     remove_timer(&name_cmd.name);
 }
