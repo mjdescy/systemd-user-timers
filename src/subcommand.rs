@@ -31,11 +31,13 @@ pub fn add_timer_command(add_cmd: &AddCommand) {
         exec_if_missed: add_cmd.exec_if_missed,
     };
 
-    // Check if service file exists before creating timer file
-    let service_path = user_timer.service_file_path();
-    if !service_path.exists() {
-        eprintln!("Error: Service file does not exist at {:?}", service_path);
-        return;
+    // Create systemd user directory if it doesn't exist
+    let systemd_dir = user_timer.systemd_dir();
+    if !systemd_dir.exists() {
+        if let Err(e) = std::fs::create_dir_all(&systemd_dir) {
+            eprintln!("Error: Failed to create systemd user directory: {}", e);
+            return;
+        }
     }
 
     // Create the service file
@@ -47,6 +49,13 @@ pub fn add_timer_command(add_cmd: &AddCommand) {
     // Create the timer file
     if let Err(e) = std::fs::write(user_timer.timer_file_path(), user_timer.timer_file_contents()) {
         eprintln!("Error: Failed to create timer file: {}", e);
+        return;
+    }
+
+    // Check if service file exists before proceeding
+    let service_path = user_timer.service_file_path();
+    if !service_path.exists() {
+        eprintln!("Error: Service file does not exist at {:?}", service_path);
         return;
     }
 

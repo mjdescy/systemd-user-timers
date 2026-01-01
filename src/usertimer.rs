@@ -12,7 +12,7 @@ pub struct UserTimer {
 
 impl UserTimer {
     /// Get the systemd user directory path
-    fn systemd_dir(&self) -> PathBuf {
+    pub fn systemd_dir(&self) -> PathBuf {
         let home = env::var("HOME").expect("HOME environment variable not set");
         PathBuf::from(home).join(".config/systemd/user")
     }
