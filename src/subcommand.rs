@@ -168,18 +168,28 @@ fn enable_timer(name: &str) {
 
 /// Execute disable timer command
 pub fn disable_timer_command(name_cmd: &NameCommand) {
-    disable_timer(&name_cmd.name);
+    if let Err(e) = disable_timer(&name_cmd.name) {
+        eprintln!("{}", e);
+    }
 }
 
 /// Disable a timer by name
-fn disable_timer(name: &str) {
-    std::process::Command::new("systemctl")
+fn disable_timer(name: &str) -> Result<(), std::io::Error> {
+    let status = std::process::Command::new("systemctl")
         .arg("--user")
         .arg("disable")
         .arg("--now")
         .arg(format!("{}.timer", name))
-        .status()
-        .expect("Failed to disable the timer");
+        .status()?;
+    
+    if !status.success() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to disable timer {}", name)
+        ));
+    }
+    
+    Ok(())
 }
 
 /// Execute start timer command
@@ -220,7 +230,10 @@ pub fn remove_timer_command(name_cmd: &NameCommand) {
 /// Remove a timer by name
 fn remove_timer(name: &str) {
     // Disable the timer first
-    disable_timer(name);
+    if let Err(e) = disable_timer(name) {
+        eprintln!("Error: Failed to disable timer: {}", e);
+        return;
+    }
 
     // Remove the timer and service files
     let user_timer = UserTimer {
