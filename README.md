@@ -28,6 +28,8 @@ The `usertimers` command's functionality is broken out into numerous subcommands
 | `list` | List user timers |
 | `enable` | Enable an existing user timer |
 | `disable` | Disable an existing user timer |
+| `start` | Start an existing user timer |
+| `stop` | Stop an existing user timer |
 | `remove` | Remove an existing user timer |
 | `status` | Display status of an existing user timer |
 | `help` | Display command line usage information |
@@ -54,12 +56,16 @@ After those first two steps, the following steps are needed, either by using `us
 Creating and starting a timer to execute a script named `task.sh` can be done in one command.
 
 ```bash
-usertimers add --exec ~/.local/bin/task.sh --schedule weekly --exec-if-missed --desc "Execute task" 
+usertimers add --exec ~/.local/bin/task.sh --when weekly
 ```
 
-By default, the timer name is set to the executable name without its file extension (`task` in this example). The timer name can be set explicitly by adding a `--name <task_name>` parameter.
+By default, the timer name is set to the executable file name without its file extension (`task` in this examples). 
 
-Note that, in this example, `task.sh` resides in the `~/.local/bin` directory, which is the default location for user-specific executables.
+You can explicitly set the task name and description as well.
+
+```bash
+usertimers add --name task --desc "Execute task" --exec ~/.local/bin/task.sh --when weekly
+```
 
 ### Equivalent systemd commands
 
@@ -69,11 +75,11 @@ Creating and starting the same timer without `usertimers` takes multiple steps, 
 
 ```ini
 [Unit]
-Description=Execute task weekly
+Description=Execute task
 
 [Service]
 Type=oneshot
-ExecStart=/path/to/your/task/script.sh
+ExecStart=/home/user/.local/bin/task.sh
 ```
 
 2. Create timer file (`~/.config/systemd/user/task.timer`) with your favorite text editor and set its contents to:
@@ -123,7 +129,7 @@ usertimers enable task
 ### Equivalent systemd command
 
 ```bash
-systemctl --user enable --now task.timer
+systemctl --user enable task.timer
 ```
 
 ## How to disable an existing user timer
@@ -137,7 +143,35 @@ usertimers disable task
 ### Equivalent systemd command
 
 ```bash
-systemctl --user disable --now task.timer
+systemctl --user disable task.timer
+```
+
+## How to start an existing user timer
+
+### With `usertimers`
+
+```bash
+usertimers start task
+```
+
+### Equivalent systemd command
+
+```bash
+systemctl --user start task.timer
+```
+
+## How to stop an existing user timer
+
+### With `usertimers`
+
+```bash
+usertimers stop task
+```
+
+### Equivalent systemd command
+
+```bash
+systemctl --user stop task.timer
 ```
 
 ## How to remove an existing user timer
@@ -153,7 +187,7 @@ usertimers remove task
 1. Execute the following shell command
 
 ```bash
-systemctl --user disable --now task.timer
+systemctl --user disable task.timer
 ```
 
 2. Remove the .timer and .service files

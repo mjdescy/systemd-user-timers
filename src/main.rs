@@ -27,6 +27,9 @@ fn main() {
         Some(Commands::Remove(name_cmd)) => {
             subcommand::remove_timer_command(&name_cmd);
         },
+        Some(Commands::Status(name_cmd)) => {
+            subcommand::status_command(&name_cmd);
+        },
         Some(Commands::List {}) => {
             subcommand::list_timers_command();
         },

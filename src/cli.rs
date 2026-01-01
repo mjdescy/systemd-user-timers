@@ -59,6 +59,8 @@ pub enum Commands {
     Stop(NameCommand),
     /// remove a timer (deletes both timer and service files)
     Remove(NameCommand),
+    /// show status of a user timer
+    Status(NameCommand),
     /// list all user timers
     List {},
 }

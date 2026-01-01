@@ -105,6 +105,23 @@ fn get_timer_description(exec: &str, description: &Option<String>) -> String {
     }
 }
 
+/// Show the status of a user timer
+pub fn status_command(name_cmd: &NameCommand) {
+    let output = std::process::Command::new("systemctl")
+        .arg("--user")
+        .arg("status")
+        .arg(format!("{}.timer", name_cmd.name))
+        .output()
+        .expect("Failed to execute systemctl");
+
+    if output.status.success() {
+        let status = String::from_utf8_lossy(&output.stdout);
+        println!("{}", status);
+    } else {
+        eprintln!("Error: Failed to get status for timer {}", name_cmd.name);
+    }
+}
+
 /// List all user timers
 pub fn list_timers_command() {
     // List all user timers using systemctl
