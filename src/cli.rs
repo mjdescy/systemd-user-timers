@@ -37,7 +37,6 @@ pub struct AddCommand {
 #[derive(Args)]
 pub struct NameCommand {
     /// name of the timer
-    #[arg(short, long)]
     pub name: String,
 
     /// verbose output
