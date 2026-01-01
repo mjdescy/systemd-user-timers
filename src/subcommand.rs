@@ -67,9 +67,22 @@ pub fn add_timer_command(add_cmd: &AddCommand) {
 
 /// Validate that the executable path points to a valid file
 fn validate_executable_path(exec: &str) -> bool {
-    let full_path = shellexpand::tilde(exec).to_string();
-    let exec_path = PathBuf::from(full_path);
-    exec_path.is_file()
+    // Extract just the command (first word) before any arguments
+    let command = exec.split_whitespace().next().unwrap_or(exec);
+    let full_path = shellexpand::tilde(command).to_string();
+    
+    // First check if it's a direct file path
+    let exec_path = PathBuf::from(&full_path);
+    if exec_path.is_file() {
+        return true;
+    }
+    
+    // If not, check if it's in PATH using 'which'
+    std::process::Command::new("which")
+        .arg(&full_path)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }
 
 /// Validate the schedule format using systemd-analyze
@@ -87,10 +100,12 @@ fn get_timer_name(exec: &str, name: &Option<String>) -> String {
     match name {
         Some(n) => n.to_string(),
         None => {
-            PathBuf::from(exec)
+            // Extract just the command (first word) before any arguments
+            let command = exec.split_whitespace().next().unwrap_or(exec);
+            PathBuf::from(command)
                 .file_stem()
                 .and_then(|s| s.to_str())
-                .unwrap_or(exec)
+                .unwrap_or(command)
                 .replace('.', "_")
                 .to_string()
         }
