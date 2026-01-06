@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use shellexpand;
 
-use crate::cli::{AddCommand, NameCommand};
+use crate::cli::{AddCommand, NameCommand, RemoveCommand};
 use crate::usertimer::UserTimer;
 
 /// Execute add timer command; add a new user timer
@@ -223,19 +223,18 @@ fn stop_timer(name: &str) {
 }
 
 /// Execute remove timer command
-pub fn remove_timer_command(name_cmd: &NameCommand) {
-    remove_timer(&name_cmd.name);
+pub fn remove_timer_command(name_cmd: &RemoveCommand) {
+    remove_timer(&name_cmd.name, name_cmd.remove_service);
 }
 
 /// Remove a timer by name
-fn remove_timer(name: &str) {
+fn remove_timer(name: &str, remove_service: bool) {
     // Disable the timer first
     if let Err(e) = disable_timer(name) {
         eprintln!("Error: Failed to disable timer: {}", e);
         return;
     }
 
-    // Remove the timer and service files
     let user_timer = UserTimer {
         executable: String::new(),
         description: String::new(),
@@ -244,12 +243,16 @@ fn remove_timer(name: &str) {
         exec_if_missed: true,
     };
 
+    // Remove the timer file
     if let Err(e) = std::fs::remove_file(user_timer.timer_file_path()) {
         eprintln!("Error: Failed to remove timer file: {}", e);
     }
 
-    if let Err(e) = std::fs::remove_file(user_timer.service_file_path()) {
-        eprintln!("Error: Failed to remove service file: {}", e);
+    // Remove the service file if requested
+    if remove_service {
+        if let Err(e) = std::fs::remove_file(user_timer.service_file_path()) {
+            eprintln!("Error: Failed to remove service file: {}", e);
+        }
     }
 
     // Reload systemd daemon

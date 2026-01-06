@@ -44,6 +44,20 @@ pub struct NameCommand {
     pub verbose: bool,
 }   
 
+#[derive(Args)]
+pub struct RemoveCommand {
+    /// name of the timer
+    pub name: String,
+
+    /// remove associated service file as well
+    #[arg(short, long, default_value_t = false)]
+    pub remove_service: bool,
+
+    /// verbose output
+    #[arg(short, long, default_value_t = false)]
+    pub verbose: bool,
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
     /// add a timer
@@ -57,7 +71,7 @@ pub enum Commands {
     /// stop a timer
     Stop(NameCommand),
     /// remove a timer (deletes both timer and service files)
-    Remove(NameCommand),
+    Remove(RemoveCommand),
     /// show status of a user timer
     Status(NameCommand),
     /// list all user timers
