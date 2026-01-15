@@ -45,6 +45,14 @@ pub struct NameCommand {
 }   
 
 #[derive(Args)]
+pub struct VerboseCommand {
+    /// verbose output
+    #[arg(short, long, default_value_t = false)]
+    pub verbose: bool,
+}   
+
+
+#[derive(Args)]
 pub struct RemoveCommand {
     /// name of the timer
     pub name: String,
@@ -75,5 +83,5 @@ pub enum Commands {
     /// show status of a user timer
     Status(NameCommand),
     /// list all user timers
-    List {},
+    List(VerboseCommand),
 }

@@ -1,63 +1,94 @@
 use std::path::PathBuf;
 use shellexpand;
 
-use crate::cli::{AddCommand, NameCommand, RemoveCommand};
+use crate::cli::{AddCommand, NameCommand, RemoveCommand, VerboseCommand};
 use crate::usertimer::UserTimer;
+
+/// Print message if verbose flag is set
+fn verbose_print(verbose: bool, message: &str) {
+    if verbose {
+        println!("{}", message);
+    }
+}
 
 /// Execute add timer command; add a new user timer
 pub fn add_timer_command(add_cmd: &AddCommand) {
+    let verbose = add_cmd.verbose;
+
+    verbose_print(verbose, "Adding timer with the following parameters:");
+    verbose_print(verbose, &format!("  Executable: {}", add_cmd.exec));
+    verbose_print(verbose, &format!("  Schedule: {}", add_cmd.when));
+    verbose_print(verbose, &format!("  Name: {:?}", add_cmd.name));
+    verbose_print(verbose, &format!("  Description: {:?}", add_cmd.description));
+    verbose_print(verbose, &format!("  Execute if missed: {}", add_cmd.exec_if_missed));
+    verbose_print(verbose, "");
+
+    verbose_print(verbose, "Validating executable path...");
     if !validate_executable_path(&add_cmd.exec) {
         eprintln!("Error: Executable path does not point to a valid file: {}", add_cmd.exec);
         return;
     }
+    verbose_print(verbose, "Executable path is valid.");
+    
 
+    verbose_print(verbose, "Validating schedule format...");
     if !validate_schedule(&add_cmd.when) {
         eprintln!("Error: Invalid schedule format: {}", add_cmd.when);
         return;
     }
+    verbose_print(verbose, "Schedule format is valid.");
 
-    // Prepare timer parameters
-    let timer_exec_path = shellexpand::tilde(&add_cmd.exec).to_string();    
-    let timer_name = get_timer_name(&add_cmd.exec, &add_cmd.name);
-    let timer_description = get_timer_description(&add_cmd.exec, &add_cmd.description);
-    let timer_schedule = add_cmd.when.clone();
-
-    // Create UserTimer instance, which will help generate file paths and contents
+    verbose_print(verbose, "Preparing timer parameters...");
     let user_timer = UserTimer {
-        executable: timer_exec_path,
-        description: timer_description,
-        schedule: timer_schedule,
-        name: timer_name,
+        executable: shellexpand::tilde(&add_cmd.exec).to_string(),
+        description: get_timer_description(&add_cmd.exec, &add_cmd.description),
+        schedule: add_cmd.when.clone(),
+        name: get_timer_name(&add_cmd.exec, &add_cmd.name),
         exec_if_missed: add_cmd.exec_if_missed,
     };
 
     // Create systemd user directory if it doesn't exist
     let systemd_dir = user_timer.systemd_dir();
     if !systemd_dir.exists() {
+        verbose_print(verbose, &format!("Creating systemd user directory at {:?}", systemd_dir));
         if let Err(e) = std::fs::create_dir_all(&systemd_dir) {
             eprintln!("Error: Failed to create systemd user directory: {}", e);
             return;
         }
+        if let Err(e) = std::fs::create_dir_all(&systemd_dir) {
+            eprintln!("Error: Failed to create systemd user directory: {}", e);
+            return;
+        }
+        verbose_print(verbose, "Created systemd user directory");
     }
 
     // Create the service file
+    verbose_print(verbose, &format!("Creating service file at {:?}", user_timer.service_file_path()));
     if let Err(e) = std::fs::write(user_timer.service_file_path(), user_timer.service_file_contents()) {
         eprintln!("Error: Failed to create service file: {}", e);
         return;
     }
+    verbose_print(verbose, "Created service file");
 
     // Create the timer file
+    verbose_print(verbose, &format!("Creating timer file at {:?}", user_timer.timer_file_path()));
     if let Err(e) = std::fs::write(user_timer.timer_file_path(), user_timer.timer_file_contents()) {
         eprintln!("Error: Failed to create timer file: {}", e);
         return;
     }
+    verbose_print(verbose, "Created timer file");
 
     // Reload systemd daemon
+    verbose_print(verbose, "Reloading systemd user daemon...");
     reload_daemon();
+    verbose_print(verbose, "Reloaded systemd user daemon");
 
     // Ensure timer is enabled and started
+    verbose_print(verbose, &format!("Enabling timer {}", user_timer.name));
     enable_timer(&user_timer.name);
+    verbose_print(verbose, &format!("Starting timer {}", user_timer.name));
     start_timer(&user_timer.name);
+    verbose_print(verbose, "Timer added and started successfully.");
 }
 
 /// Validate that the executable path points to a valid file
@@ -117,6 +148,10 @@ fn get_timer_description(exec: &str, description: &Option<String>) -> String {
 
 /// Execute status command; show the status of a user timer
 pub fn status_command(name_cmd: &NameCommand) {
+    let verbose = name_cmd.verbose;
+
+    verbose_print(verbose, &format!("Getting status for timer: {}...\n", name_cmd.name));
+    verbose_print(verbose, &format!("Equivalent command: systemctl --user status {}.timer", name_cmd.name));
     let output = std::process::Command::new("systemctl")
         .arg("--user")
         .arg("status")
@@ -133,8 +168,12 @@ pub fn status_command(name_cmd: &NameCommand) {
 }
 
 /// Execute list timers command. List all user timers
-pub fn list_timers_command() {
+pub fn list_timers_command(verbose_cmd: &VerboseCommand) {
+    let verbose = verbose_cmd.verbose;
+    
     // List all user timers using systemctl
+    verbose_print(verbose, "Listing all user timers...");
+    verbose_print(verbose, "Equivalent command: systemctl --user list-timers --all\n");
     let output = std::process::Command::new("systemctl")
         .arg("--user")
         .arg("list-timers")
@@ -152,6 +191,10 @@ pub fn list_timers_command() {
 
 /// Execute enable timer command
 pub fn enable_timer_command(name_cmd: &NameCommand) {
+    let verbose = name_cmd.verbose;
+
+    verbose_print(verbose, &format!("Enabling timer: {}", name_cmd.name));
+    verbose_print(verbose, &format!("Equivalent command: systemctl --user enable --now {}.timer", name_cmd.name));
     enable_timer(&name_cmd.name);
 }
 
@@ -168,6 +211,10 @@ fn enable_timer(name: &str) {
 
 /// Execute disable timer command
 pub fn disable_timer_command(name_cmd: &NameCommand) {
+    let verbose = name_cmd.verbose;
+
+    verbose_print(verbose, &format!("Disabling timer: {}...", name_cmd.name));
+    verbose_print(verbose, &format!("Equivalent command: systemctl --user disable --now {}.timer", name_cmd.name));
     if let Err(e) = disable_timer(&name_cmd.name) {
         eprintln!("{}", e);
     }
@@ -194,6 +241,10 @@ fn disable_timer(name: &str) -> Result<(), std::io::Error> {
 
 /// Execute start timer command
 pub fn start_timer_command(name_cmd: &NameCommand) {
+    let verbose = name_cmd.verbose;
+
+    verbose_print(verbose, &format!("Starting timer: {}...", name_cmd.name));
+    verbose_print(verbose, &format!("Equivalent command: systemctl --user start {}.timer", name_cmd.name));
     start_timer(&name_cmd.name);
 }
 
@@ -209,6 +260,10 @@ fn start_timer(name: &str) {
 
 /// Execute stop timer command
 pub fn stop_timer_command(name_cmd: &NameCommand) {
+    let verbose = name_cmd.verbose;
+
+    verbose_print(verbose, &format!("Stopping timer: {}...", name_cmd.name));
+    verbose_print(verbose, &format!("Equivalent command: systemctl --user stop {}.timer", name_cmd.name));
     stop_timer(&name_cmd.name);
 }
 
@@ -224,6 +279,10 @@ fn stop_timer(name: &str) {
 
 /// Execute remove timer command
 pub fn remove_timer_command(name_cmd: &RemoveCommand) {
+    let verbose = name_cmd.verbose;
+
+    verbose_print(verbose, &format!("Removing timer: {}...", name_cmd.name));
+    verbose_print(verbose, &format!("Equivalent command: systemctl --user disable --now {}.timer", name_cmd.name));
     remove_timer(&name_cmd.name, name_cmd.remove_service);
 }
 

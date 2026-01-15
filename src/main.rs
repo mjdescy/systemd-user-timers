@@ -30,8 +30,8 @@ fn main() {
         Some(Commands::Status(name_cmd)) => {
             subcommand::status_command(&name_cmd);
         },
-        Some(Commands::List {}) => {
-            subcommand::list_timers_command();
+        Some(Commands::List(name_cmd)) => {
+            subcommand::list_timers_command(&name_cmd);
         },
         None => {
             println!("No command provided. Use --help for usage information.");
