@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use shellexpand;
 
 use crate::cli::{AddCommand, NameCommand, RemoveCommand, VerboseCommand};
 use crate::usertimer::UserTimer;
@@ -243,8 +242,7 @@ fn disable_timer(full_timer_name: &str) -> Result<(), std::io::Error> {
         .status()?;
     
     if !status.success() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        return Err(std::io::Error::other(
             format!("Failed to disable timer {}", full_timer_name)
         ));
     }
@@ -305,7 +303,7 @@ pub fn remove_timer_command(name_cmd: &RemoveCommand) {
 /// Remove a timer by name
 fn remove_timer(full_timer_name: &str, remove_service: bool) {
     // Disable the timer first
-    if let Err(e) = disable_timer(&full_timer_name) {
+    if let Err(e) = disable_timer(full_timer_name) {
         eprintln!("Error: Failed to disable timer: {}", e);
         return;
     }
@@ -324,11 +322,10 @@ fn remove_timer(full_timer_name: &str, remove_service: bool) {
     }
 
     // Remove the service file if requested
-    if remove_service {
-        if let Err(e) = std::fs::remove_file(user_timer.service_file_path()) {
+    if remove_service
+        && let Err(e) = std::fs::remove_file(user_timer.service_file_path()) {
             eprintln!("Error: Failed to remove service file: {}", e);
         }
-    }
 
     // Reload systemd daemon
     reload_daemon();

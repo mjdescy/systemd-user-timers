@@ -19,13 +19,13 @@ impl UserTimer {
 
     /// Get the full path for the service file
     pub fn service_file_path(&self) -> PathBuf {
-        PathBuf::from(self.systemd_dir())
+        self.systemd_dir()
             .join(format!("{}.service", self.name))
     }
 
     /// Get the full path for the timer file
     pub fn timer_file_path(&self) -> PathBuf {
-        PathBuf::from(self.systemd_dir())
+        self.systemd_dir()
             .join(format!("{}.timer", self.name))
     }
 

@@ -13,25 +13,25 @@ fn main() {
             subcommand::add_timer_command(add_cmd);
         },
         Some(Commands::Enable(name_cmd)) => {
-            subcommand::enable_timer_command(&name_cmd);
+            subcommand::enable_timer_command(name_cmd);
         },
         Some(Commands::Disable(name_cmd)) => {
-            subcommand::disable_timer_command(&name_cmd);
+            subcommand::disable_timer_command(name_cmd);
         },
         Some(Commands::Start(name_cmd)) => {
-            subcommand::start_timer_command(&name_cmd);
+            subcommand::start_timer_command(name_cmd);
         },
         Some(Commands::Stop(name_cmd)) => {
-            subcommand::stop_timer_command(&name_cmd);
+            subcommand::stop_timer_command(name_cmd);
         },
         Some(Commands::Remove(name_cmd)) => {
-            subcommand::remove_timer_command(&name_cmd);
+            subcommand::remove_timer_command(name_cmd);
         },
         Some(Commands::Status(name_cmd)) => {
-            subcommand::status_command(&name_cmd);
+            subcommand::status_command(name_cmd);
         },
         Some(Commands::List(name_cmd)) => {
-            subcommand::list_timers_command(&name_cmd);
+            subcommand::list_timers_command(name_cmd);
         },
         None => {
             println!("No command provided. Use --help for usage information.");
