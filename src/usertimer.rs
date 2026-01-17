@@ -17,16 +17,24 @@ impl UserTimer {
         PathBuf::from(home).join(".config/systemd/user")
     }
 
+    /// Get the name of the timer without the .timer suffix, if present
+    pub fn base_name(&self) -> &str {
+        if self.name.ends_with(".timer") {
+            &self.name[..self.name.len() - 6]
+        } else {
+            &self.name
+        }
+    }
+
+    /// Get the name of the service file
+    pub fn service_file_name(&self) -> String {
+        format!("{}.service", self.base_name())
+    }
+
     /// Get the full path for the service file
     pub fn service_file_path(&self) -> PathBuf {
         self.systemd_dir()
-            .join(format!("{}.service", self.name))
-    }
-
-    /// Get the full path for the timer file
-    pub fn timer_file_path(&self) -> PathBuf {
-        self.systemd_dir()
-            .join(format!("{}.timer", self.name))
+            .join(self.service_file_name())
     }
 
     /// Generate the contents of the service file
@@ -45,6 +53,17 @@ ExecStart={executable}
         )
     }
 
+    /// Get the name of the timer file
+    pub fn timer_file_name(&self) -> String {
+        format!("{}.timer", self.base_name())
+    }
+
+    /// Get the full path for the timer file
+    pub fn timer_file_path(&self) -> PathBuf {
+        self.systemd_dir()
+            .join(self.timer_file_name())
+    }        
+    
     /// Generate the contents of the timer file
     pub fn timer_file_contents(&self) -> String {
         format!(
