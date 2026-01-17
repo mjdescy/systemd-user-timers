@@ -49,8 +49,7 @@ pub struct VerboseCommand {
     /// verbose output
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
-}   
-
+}
 
 #[derive(Args)]
 pub struct RemoveCommand {
